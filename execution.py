@@ -40,6 +40,7 @@ from comfy_execution.progress import get_progress_state, reset_progress_state, a
 from comfy_execution.utils import CurrentNodeContext
 from comfy_api.internal import _ComfyNodeInternal, _NodeOutputInternal, first_real_override, is_class, make_locked_method_func
 from comfy_api.latest import io, _io
+from comfy_execution.cache_provider import _has_cache_providers, _get_cache_providers, _logger as _cache_logger
 
 
 class ExecutionResult(Enum):
@@ -685,8 +686,6 @@ class PromptExecutor:
             self.add_message("execution_error", mes, broadcast=False)
 
     def _notify_prompt_lifecycle(self, event: str, prompt_id: str):
-        from comfy_execution.cache_provider import _has_cache_providers, _get_cache_providers, _logger
-
         if not _has_cache_providers():
             return
 
@@ -697,7 +696,7 @@ class PromptExecutor:
                 elif event == "end":
                     provider.on_prompt_end(prompt_id)
             except Exception as e:
-                _logger.warning(f"Cache provider {provider.__class__.__name__} error on {event}: {e}")
+                _cache_logger.warning(f"Cache provider {provider.__class__.__name__} error on {event}: {e}")
 
     def execute(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
         asyncio.run(self.execute_async(prompt, prompt_id, extra_data, execute_outputs))

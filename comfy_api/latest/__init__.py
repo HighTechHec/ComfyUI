@@ -118,6 +118,23 @@ class Types:
 
 
 class Caching:
+    """
+    External cache provider API for sharing cached node outputs
+    across ComfyUI instances.
+
+    Example::
+
+        from comfy_api.latest import Caching
+
+        class MyCacheProvider(Caching.CacheProvider):
+            async def on_lookup(self, context):
+                ...  # check external storage
+
+            async def on_store(self, context, value):
+                ...  # store to external storage
+
+        Caching.register_provider(MyCacheProvider())
+    """
     # Import from comfy_execution.cache_provider (source of truth)
     from comfy_execution.cache_provider import (
         CacheProvider,

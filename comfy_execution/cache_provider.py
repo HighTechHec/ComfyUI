@@ -5,7 +5,6 @@ import hashlib
 import json
 import logging
 import math
-import pickle
 import threading
 
 _logger = logging.getLogger(__name__)
@@ -143,13 +142,7 @@ def _serialize_cache_key(cache_key: Any) -> Optional[str]:
         return hashlib.sha256(json_str.encode('utf-8')).hexdigest()
     except Exception as e:
         _logger.warning(f"Failed to serialize cache key: {e}")
-        # Fallback to pickle (non-deterministic but better than nothing)
-        try:
-            serialized = pickle.dumps(cache_key, protocol=4)
-            return hashlib.sha256(serialized).hexdigest()
-        except Exception as fallback_error:
-            _logger.warning(f"Failed pickle fallback for cache key: {fallback_error}")
-            return None
+        return None
 
 
 def _contains_nan(obj: Any) -> bool:
