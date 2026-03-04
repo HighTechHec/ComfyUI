@@ -5,7 +5,7 @@ import logging
 import threading
 
 # Public types — source of truth is comfy_api.latest._caching
-from comfy_api.latest._caching import CacheProvider, CacheContext, CacheValue
+from comfy_api.latest._caching import CacheProvider, CacheContext, CacheValue  # noqa: F401 (re-exported)
 
 _logger = logging.getLogger(__name__)
 
