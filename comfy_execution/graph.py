@@ -118,6 +118,11 @@ class TopologicalSort:
         class_def = nodes.NODE_CLASS_MAPPINGS[class_type]
         return get_input_info(class_def, input_name)
 
+    def is_intermediate_output(self, node_id):
+        class_type = self.dynprompt.get_node(node_id)["class_type"]
+        class_def = nodes.NODE_CLASS_MAPPINGS[class_type]
+        return hasattr(class_def, 'HAS_INTERMEDIATE_OUTPUT') and class_def.HAS_INTERMEDIATE_OUTPUT == True
+
     def make_input_strong_link(self, to_node_id, to_input):
         inputs = self.dynprompt.get_node(to_node_id)["inputs"]
         if to_input not in inputs:

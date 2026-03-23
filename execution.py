@@ -411,6 +411,14 @@ def format_value(x):
     else:
         return str(x)
 
+def _send_cached_ui(server, node_id, display_node_id, cached, prompt_id, ui_outputs):
+    if server.client_id is None:
+        return
+    cached_ui = cached.ui or {}
+    server.send_sync("executed", { "node": node_id, "display_node": display_node_id, "output": cached_ui.get("output", None), "prompt_id": prompt_id }, server.client_id)
+    if cached.ui is not None:
+        ui_outputs[node_id] = cached.ui
+
 async def execute(server, dynprompt, caches, current_item, extra_data, executed, prompt_id, execution_list, pending_subgraph_results, pending_async_nodes, ui_outputs):
     unique_id = current_item
     real_node_id = dynprompt.get_real_node_id(unique_id)
@@ -421,11 +429,7 @@ async def execute(server, dynprompt, caches, current_item, extra_data, executed,
     class_def = nodes.NODE_CLASS_MAPPINGS[class_type]
     cached = await caches.outputs.get(unique_id)
     if cached is not None:
-        if server.client_id is not None:
-            cached_ui = cached.ui or {}
-            server.send_sync("executed", { "node": unique_id, "display_node": display_node_id, "output": cached_ui.get("output",None), "prompt_id": prompt_id }, server.client_id)
-            if cached.ui is not None:
-                ui_outputs[unique_id] = cached.ui
+        _send_cached_ui(server, unique_id, display_node_id, cached, prompt_id, ui_outputs)
         get_progress_state().finish_progress(unique_id)
         execution_list.cache_update(unique_id, cached)
         return (ExecutionResult.SUCCESS, None, None)
@@ -747,6 +751,16 @@ class PromptExecutor:
                 current_outputs = self.caches.outputs.all_node_ids()
                 for node_id in list(execute_outputs):
                     execution_list.add_node(node_id)
+
+                # Resend cached UI for intermediate output nodes that are not in the execution list.
+                for node_id in list(prompt.keys()):
+                    if node_id in execution_list.pendingNodes:
+                        continue
+                    if not execution_list.is_intermediate_output(node_id):
+                        continue
+                    cached = await self.caches.outputs.get(node_id)
+                    if cached is not None:
+                        _send_cached_ui(self.server, node_id, node_id, cached, prompt_id, ui_node_outputs)
 
                 while not execution_list.is_empty():
                     node_id, error, ex = await execution_list.stage_node_execution()
